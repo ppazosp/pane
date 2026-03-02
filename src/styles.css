@@ -8,16 +8,16 @@
 :root {
   --bg-primary: #000000;
   --bg-secondary: #0a0a0a;
-  --bg-tertiary: #1f1f1f;
-  --bg-surface: #131313;
-  --text-primary: #d6dbe5;
-  --text-secondary: #8a8fa5;
-  --text-muted: #4e5366;
-  --accent: #2a84d2;
-  --accent-dim: #333842;
-  --border: #1f1f1f;
-  --handle: #1f1f1f;
-  --handle-hover: #2a84d2;
+  --bg-tertiary: #1a1a1a;
+  --bg-surface: #121212;
+  --text-primary: #e0e0e0;
+  --text-secondary: #888888;
+  --text-muted: #555555;
+  --accent: #ffffff;
+  --accent-dim: #444444;
+  --border: #1a1a1a;
+  --handle: #1a1a1a;
+  --handle-hover: #333333;
   --tab-active: #000000;
   --tab-inactive: #0a0a0a;
   --unsaved: #ecba0f;
@@ -186,7 +186,7 @@ html, body {
 #editor-container .milkdown h2 { font-size: 22px; margin: 20px 0 10px; font-weight: 600; }
 #editor-container .milkdown h3 { font-size: 18px; margin: 16px 0 8px; font-weight: 600; }
 #editor-container .milkdown p { margin: 8px 0; }
-#editor-container .milkdown a { color: #2a84d2; text-decoration: underline; }
+#editor-container .milkdown a { color: #ffffff; text-decoration: underline; }
 #editor-container .milkdown a:hover { text-decoration: underline; }
 
 #editor-container .milkdown code {
