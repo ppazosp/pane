@@ -22,6 +22,18 @@ fn expand_tilde(path: &str) -> String {
 }
 
 #[tauri::command]
+pub fn get_settings_path() -> String {
+    let path = config_path();
+    if !path.exists() {
+        if let Some(parent) = path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        let _ = fs::write(&path, "{\n  \"search_folders\": [\"~\"]\n}\n");
+    }
+    path.to_string_lossy().to_string()
+}
+
+#[tauri::command]
 pub fn get_search_folders() -> Vec<String> {
     let path = config_path();
     if let Ok(contents) = fs::read_to_string(&path) {

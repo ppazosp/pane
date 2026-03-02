@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { initLayout } from "./layout";
 import { initTerminal, focusTerminal } from "./terminal";
@@ -17,6 +18,11 @@ async function init() {
 
   await listen<string>("open-file", (event) => {
     openFile(event.payload);
+  });
+
+  await listen("open-settings", async () => {
+    const path = await invoke<string>("get_settings_path");
+    openFile(path);
   });
 
   document.addEventListener("keydown", (e) => {
