@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pane</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="sidebar">
+        <div id="sidebar-header">
+          <span class="sidebar-title">Files</span>
+        </div>
+        <div id="file-tree"></div>
+      </div>
+      <div class="drag-handle" id="handle-sidebar"></div>
+      <div id="terminal-panel">
+        <div id="terminal-container"></div>
+      </div>
+      <div class="drag-handle" id="handle-editor"></div>
+      <div id="editor-panel">
+        <div id="tab-bar"></div>
+        <div id="editor-container"></div>
+        <div id="editor-empty">
+          <span>Open a .md file to start editing</span>
+        </div>
+      </div>
+    </div>
+    <div id="quickopen-overlay" class="hidden">
+      <div id="quickopen-modal">
+        <input id="quickopen-input" type="text" placeholder="Open file..." autocomplete="off" />
+        <ul id="quickopen-list"></ul>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
