@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { initLayout } from "./layout";
 import { initTerminal, focusTerminal } from "./terminal";
-import { openFile, closeActiveTab, focusEditor } from "./editor";
+import { openFile, closeActiveTab, saveActiveTab, focusEditor } from "./editor";
 import { initQuickOpen, toggleQuickOpen } from "./quickopen";
 
 let focusedPanel: "terminal" | "editor" = "terminal";
@@ -36,6 +36,9 @@ async function init() {
     } else if (mod && e.key === "w") {
       e.preventDefault();
       closeActiveTab();
+    } else if (mod && e.key === "s") {
+      e.preventDefault();
+      saveActiveTab();
     }
   });
 

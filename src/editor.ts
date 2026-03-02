@@ -21,7 +21,6 @@ interface Tab {
 let tabs: Tab[] = [];
 let activeTabPath: string | null = null;
 let editor: Editor | null = null;
-let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export async function openFile(path: string) {
   // If tab already exists, switch to it
@@ -93,12 +92,6 @@ function onContentChanged(path: string, markdown: string) {
     tab.unsaved = true;
     renderTabs();
   }
-
-  // Debounced auto-save (1 second)
-  if (saveTimeout) clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(() => {
-    saveFile(path);
-  }, 1000);
 }
 
 async function saveFile(path: string) {
@@ -112,6 +105,10 @@ async function saveFile(path: string) {
   } catch (e) {
     console.error("Failed to save:", e);
   }
+}
+
+export function saveActiveTab() {
+  if (activeTabPath) saveFile(activeTabPath);
 }
 
 export function closeTab(path: string) {
