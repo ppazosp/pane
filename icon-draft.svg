@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 1024 1024"
+   version="1.1"
+   id="svg6"
+   sodipodi:docname="icon-draft.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview6"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="0.42075665"
+     inkscape:cx="467.01579"
+     inkscape:cy="394.52734"
+     inkscape:window-width="1013"
+     inkscape:window-height="1331"
+     inkscape:window-x="0"
+     inkscape:window-y="30"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg6" />
+  <defs
+     id="defs4">
+    <linearGradient
+       id="left-grad"
+       x1="174.54336"
+       y1="123.20148"
+       x2="174.54336"
+       y2="627.74087"
+       gradientTransform="matrix(0.61111847,0,0,1.2684836,85.333333,35.720942)"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         offset="0%"
+         stop-color="#ffffff"
+         id="stop1" />
+      <stop
+         offset="100%"
+         stop-color="#999999"
+         id="stop2" />
+    </linearGradient>
+    <linearGradient
+       id="right-grad"
+       x1="717.26411"
+       y1="627.74087"
+       x2="717.26411"
+       y2="123.20148"
+       gradientTransform="matrix(0.61111847,0,0,1.2684836,85.333333,35.720942)"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         offset="0%"
+         stop-color="#ffffff"
+         id="stop3" />
+      <stop
+         offset="100%"
+         stop-color="#999999"
+         id="stop4" />
+    </linearGradient>
+  </defs>
+  <!-- Black background -->
+  <rect
+     width="1024"
+     height="1024"
+     rx="220"
+     fill="#000000"
+     id="rect4" />
+  <!-- Left panel (terminal) -->
+  <rect
+     x="192"
+     y="192"
+     width="308.33334"
+     height="640"
+     rx="30"
+     fill="url(#left-grad)"
+     id="rect5"
+     style="fill:url(#left-grad);stroke-width:0.88045" />
+  <!-- Right panel (editor) -->
+  <rect
+     x="523.66663"
+     y="192"
+     width="308.33334"
+     height="640"
+     rx="30"
+     fill="url(#right-grad)"
+     id="rect6"
+     style="fill:url(#right-grad);stroke-width:0.88045" />
+</svg>

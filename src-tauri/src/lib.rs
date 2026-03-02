@@ -34,7 +34,12 @@ pub fn run() {
                     } else {
                         dir
                     };
-                    dir.to_string_lossy().to_string()
+                    // When launched from Finder, cwd is "/" — fall back to $HOME
+                    if dir == std::path::PathBuf::from("/") {
+                        std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
+                    } else {
+                        dir.to_string_lossy().to_string()
+                    }
                 });
 
             // PTY state (spawned lazily by frontend after terminal is sized)

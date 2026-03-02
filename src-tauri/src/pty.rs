@@ -36,8 +36,12 @@ pub fn init_pty(
         })
         .map_err(|e| e.to_string())?;
 
-    let mut cmd = CommandBuilder::new_default_prog();
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
+    let mut cmd = CommandBuilder::new(&shell);
+    cmd.arg("-l"); // login shell — loads user profile
     cmd.cwd(&cwd);
+    cmd.env("HOME", std::env::var("HOME").unwrap_or_else(|_| "/".to_string()));
+    cmd.env("TERM", "xterm-256color");
 
     let _child = pair
         .slave

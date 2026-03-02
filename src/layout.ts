@@ -1,16 +1,7 @@
 export function initLayout() {
-  const sidebar = document.getElementById("sidebar")!;
-  const handleSidebar = document.getElementById("handle-sidebar")!;
   const terminalPanel = document.getElementById("terminal-panel")!;
   const handleEditor = document.getElementById("handle-editor")!;
   const editorPanel = document.getElementById("editor-panel")!;
-
-  setupDragHandle(handleSidebar, (dx) => {
-    const newWidth = sidebar.offsetWidth + dx;
-    if (newWidth >= 100 && newWidth <= 400) {
-      sidebar.style.width = newWidth + "px";
-    }
-  });
 
   setupDragHandle(handleEditor, (dx) => {
     const termRect = terminalPanel.getBoundingClientRect();
@@ -53,10 +44,4 @@ function setupDragHandle(handle: HTMLElement, onDrag: (dx: number) => void) {
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
   });
-}
-
-export function toggleSidebar() {
-  const sidebar = document.getElementById("sidebar")!;
-  sidebar.classList.toggle("collapsed");
-  window.dispatchEvent(new Event("pane-resize"));
 }
