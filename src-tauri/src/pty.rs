@@ -42,6 +42,7 @@ pub fn init_pty(
     cmd.cwd(&cwd);
     cmd.env("HOME", std::env::var("HOME").unwrap_or_else(|_| "/".to_string()));
     cmd.env("TERM", "xterm-256color");
+    cmd.env("TERM_PROGRAM", "ghostty");
 
     let _child = pair
         .slave
