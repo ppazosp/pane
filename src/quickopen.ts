@@ -1,58 +1,54 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
-interface DirEntry {
+interface FileEntry {
   name: string;
   path: string;
-  isDir: boolean;
-  children: DirEntry[] | null;
 }
 
-async function getAllFiles(): Promise<{ name: string; path: string }[]> {
+// --- Cache ---
+let cachedFiles: FileEntry[] | null = null;
+
+async function getFiles(): Promise<FileEntry[]> {
+  if (cachedFiles) return cachedFiles;
   try {
-    const rootPath = await invoke<string>("get_home_dir");
-    const entries = await invoke<DirEntry[]>("list_directory", {
-      path: rootPath,
-    });
-    const files: { name: string; path: string }[] = [];
-    flattenEntries(entries, files);
-    return files;
+    const folders = await invoke<string[]>("get_search_folders");
+    cachedFiles = await invoke<FileEntry[]>("search_files", { folders });
   } catch {
-    return [];
+    cachedFiles = [];
   }
+  return cachedFiles;
 }
 
-function flattenEntries(
-  entries: DirEntry[],
-  out: { name: string; path: string }[]
-) {
-  for (const entry of entries) {
-    if (entry.isDir && entry.children) {
-      flattenEntries(entry.children, out);
-    } else if (!entry.isDir) {
-      out.push({ name: entry.name, path: entry.path });
-    }
-  }
+function invalidateCache() {
+  cachedFiles = null;
 }
 
+// --- State ---
 let isOpen = false;
 let selectedIndex = 0;
-let filteredFiles: { name: string; path: string }[] = [];
+let filteredFiles: FileEntry[] = [];
 let onSelect: (path: string) => void = () => {};
+
+// --- Debounce ---
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function initQuickOpen(selectCallback: (path: string) => void) {
   onSelect = selectCallback;
+
+  // Invalidate cache on filesystem changes
+  listen("fs-changed", invalidateCache);
 
   const overlay = document.getElementById("quickopen-overlay")!;
   const input = document.getElementById("quickopen-input") as HTMLInputElement;
 
   overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) {
-      closeQuickOpen();
-    }
+    if (e.target === overlay) closeQuickOpen();
   });
 
   input.addEventListener("input", () => {
-    filterFiles(input.value);
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => filterFiles(input.value), 150);
   });
 
   input.addEventListener("keydown", (e) => {
@@ -60,12 +56,10 @@ export function initQuickOpen(selectCallback: (path: string) => void) {
       closeQuickOpen();
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
-      selectedIndex = Math.min(selectedIndex + 1, filteredFiles.length - 1);
-      renderList();
+      moveSelection(Math.min(selectedIndex + 1, filteredFiles.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      selectedIndex = Math.max(selectedIndex - 1, 0);
-      renderList();
+      moveSelection(Math.max(selectedIndex - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (filteredFiles[selectedIndex]) {
@@ -93,10 +87,8 @@ async function openQuickOpen() {
   input.value = "";
   selectedIndex = 0;
 
-  // Fetch all files
-  filteredFiles = await getAllFiles();
+  filteredFiles = await getFiles();
   renderList();
-
   input.focus();
 }
 
@@ -105,18 +97,13 @@ function closeQuickOpen() {
   document.getElementById("quickopen-overlay")!.classList.add("hidden");
 }
 
-function filterFiles(query: string) {
+async function filterFiles(query: string) {
+  const allFiles = await getFiles();
   const q = query.toLowerCase();
-  if (!q) {
-    getAllFiles().then((files) => {
-      filteredFiles = files;
-      selectedIndex = 0;
-      renderList();
-    });
-    return;
-  }
 
-  getAllFiles().then((allFiles) => {
+  if (!q) {
+    filteredFiles = allFiles;
+  } else {
     filteredFiles = allFiles
       .map((f) => {
         const name = f.name.toLowerCase();
@@ -130,34 +117,43 @@ function filterFiles(query: string) {
       })
       .filter((f) => f.score > 0)
       .sort((a, b) => b.score - a.score);
-    selectedIndex = 0;
-    renderList();
-  });
+  }
+
+  selectedIndex = 0;
+  renderList();
 }
 
 function fuzzyMatch(query: string, target: string): boolean {
   let qi = 0;
   for (let ti = 0; ti < target.length && qi < query.length; ti++) {
-    if (target[ti] === query[qi]) {
-      qi++;
-    }
+    if (target[ti] === query[qi]) qi++;
   }
   return qi === query.length;
+}
+
+// --- DOM: move selection without full rebuild ---
+function moveSelection(newIndex: number) {
+  if (newIndex === selectedIndex) return;
+  const list = document.getElementById("quickopen-list")!;
+  const items = list.children;
+
+  if (items[selectedIndex]) items[selectedIndex].classList.remove("selected");
+  selectedIndex = newIndex;
+  if (items[selectedIndex]) {
+    items[selectedIndex].classList.add("selected");
+    (items[selectedIndex] as HTMLElement).scrollIntoView({ block: "nearest" });
+  }
 }
 
 function renderList() {
   const list = document.getElementById("quickopen-list")!;
 
-  while (list.firstChild) {
-    list.removeChild(list.firstChild);
-  }
+  while (list.firstChild) list.removeChild(list.firstChild);
 
   for (let i = 0; i < filteredFiles.length; i++) {
     const file = filteredFiles[i];
     const li = document.createElement("li");
-    if (i === selectedIndex) {
-      li.className = "selected";
-    }
+    if (i === selectedIndex) li.className = "selected";
 
     const nameSpan = document.createElement("span");
     nameSpan.className = "file-name";
@@ -175,16 +171,12 @@ function renderList() {
     });
 
     li.addEventListener("mouseenter", () => {
-      selectedIndex = i;
-      renderList();
+      moveSelection(i);
     });
 
     list.appendChild(li);
   }
 
-  // Scroll selected item into view
   const selected = list.querySelector(".selected") as HTMLElement;
-  if (selected) {
-    selected.scrollIntoView({ block: "nearest" });
-  }
+  if (selected) selected.scrollIntoView({ block: "nearest" });
 }

@@ -101,6 +101,53 @@ pub fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
     build_tree(p, 0).ok_or_else(|| "Failed to read directory".to_string())
 }
 
+#[derive(Serialize, Clone)]
+pub struct FileEntry {
+    pub name: String,
+    pub path: String,
+}
+
+fn collect_md_files(dir: &Path, depth: u32, out: &mut Vec<FileEntry>) {
+    if depth >= MAX_DEPTH {
+        return;
+    }
+    let entries = match fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+    for entry in entries.flatten() {
+        let entry_path = entry.path();
+        if !should_include(&entry_path) {
+            continue;
+        }
+        if entry_path.is_dir() {
+            collect_md_files(&entry_path, depth + 1, out);
+        } else {
+            let name = entry_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+            out.push(FileEntry {
+                name,
+                path: entry_path.to_string_lossy().to_string(),
+            });
+        }
+    }
+}
+
+#[tauri::command]
+pub fn search_files(folders: Vec<String>) -> Vec<FileEntry> {
+    let mut results = Vec::new();
+    for folder in &folders {
+        let p = Path::new(folder);
+        if p.exists() {
+            collect_md_files(p, 0, &mut results);
+        }
+    }
+    results
+}
+
 #[tauri::command]
 pub fn read_file(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))

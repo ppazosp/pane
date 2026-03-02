@@ -37,25 +37,27 @@ export async function initTerminal() {
       '"FiraCode Nerd Font Mono", "FiraCode Nerd Font", "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace',
     scrollback: 5000,
     theme: {
-      background: "#0a0a0a",
-      foreground: "#d4d4d4",
-      cursor: "#d4d4d4",
-      selectionBackground: "#2a2a2a",
-      black: "#0a0a0a",
-      red: "#e06c75",
-      green: "#98c379",
-      yellow: "#e5c07b",
-      blue: "#61afef",
-      magenta: "#c678dd",
-      cyan: "#56b6c2",
-      white: "#e0e0e0",
-      brightBlack: "#5c6370",
-      brightRed: "#e06c75",
-      brightGreen: "#98c379",
-      brightYellow: "#e5c07b",
-      brightBlue: "#61afef",
-      brightMagenta: "#c678dd",
-      brightCyan: "#56b6c2",
+      background: "#000000",
+      foreground: "#d6dbe5",
+      cursor: "#ffffff",
+      cursorAccent: "#000000",
+      selectionBackground: "#1f1f1f",
+      selectionForeground: "#d6dbe5",
+      black: "#1f1f1f",
+      red: "#f81118",
+      green: "#2dc55e",
+      yellow: "#ecba0f",
+      blue: "#2a84d2",
+      magenta: "#4e5ab7",
+      cyan: "#1081d6",
+      white: "#d6dbe5",
+      brightBlack: "#d6dbe5",
+      brightRed: "#de352e",
+      brightGreen: "#1dd361",
+      brightYellow: "#f3bd09",
+      brightBlue: "#1081d6",
+      brightMagenta: "#5350b9",
+      brightCyan: "#0f7ddb",
       brightWhite: "#ffffff",
     },
   });
@@ -78,6 +80,15 @@ export async function initTerminal() {
   // Spawn PTY with the correct initial size
   const cwd = await invoke<string>("get_cwd");
   await invoke("init_pty", { cwd, cols: terminal.cols, rows: terminal.rows });
+
+  // Shift+Enter → send ESC + CR (newline without execute)
+  terminal.attachCustomKeyEventHandler((e) => {
+    if (e.type === "keydown" && e.key === "Enter" && e.shiftKey) {
+      invoke("write_to_pty", { data: "\x1b\r" });
+      return false;
+    }
+    return true;
+  });
 
   // Forward user input to PTY
   terminal.onData(async (data) => {

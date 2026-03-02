@@ -1,5 +1,6 @@
 mod fs_ops;
 mod pty;
+mod settings;
 mod socket;
 mod watcher;
 
@@ -9,11 +10,6 @@ use tauri::Manager;
 #[tauri::command]
 fn get_cwd(state: tauri::State<'_, WorkingDir>) -> String {
     state.0.clone()
-}
-
-#[tauri::command]
-fn get_home_dir() -> String {
-    std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -59,10 +55,11 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_cwd,
-            get_home_dir,
             fs_ops::list_directory,
             fs_ops::read_file,
             fs_ops::write_file,
+            fs_ops::search_files,
+            settings::get_search_folders,
             pty::init_pty,
             pty::write_to_pty,
             pty::resize_pty,
