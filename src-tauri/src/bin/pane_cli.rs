@@ -5,12 +5,17 @@ use std::path::PathBuf;
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    if args.len() < 3 || args[1] != "open" {
-        eprintln!("Usage: pane open <file.md>");
+    if args.len() < 2 {
+        eprintln!("Usage: pane <file>");
         std::process::exit(1);
     }
 
-    let file_arg = &args[2];
+    // Support both `pane <file>` and `pane open <file>`
+    let file_arg = if args[1] == "open" && args.len() >= 3 {
+        &args[2]
+    } else {
+        &args[1]
+    };
     let abs_path = if PathBuf::from(file_arg).is_absolute() {
         PathBuf::from(file_arg)
     } else {
@@ -40,8 +45,6 @@ fn main() {
         eprintln!("Failed to send command: {}", e);
         std::process::exit(1);
     }
-
-    println!("Opening {} in Pane", abs_path_str);
 }
 
 fn dirs_home() -> PathBuf {
