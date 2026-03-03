@@ -29,6 +29,7 @@ import { slashPlugin } from "./slash";
 import { toolbarPlugin } from "./toolbar";
 import { blockPlugin } from "./blocks";
 import { highlightPlugin } from "./highlight";
+import { placeholderPlugin } from "./placeholder";
 
 // --- Input Rules ---
 
@@ -141,5 +142,6 @@ export function buildPlugins(): Plugin[] {
     toolbarPlugin(),
     blockPlugin(),
     highlightPlugin(),
+    placeholderPlugin(),
   ];
 }

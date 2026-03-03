@@ -3,6 +3,7 @@ import { EditorView } from "prosemirror-view";
 import { schema } from "./schema";
 import { buildPlugins } from "./plugins";
 import { parseMarkdown, serializeMarkdown } from "./markdown";
+import { MermaidNodeView } from "./mermaid";
 
 let currentView: EditorView | null = null;
 
@@ -30,6 +31,14 @@ export function createEditor(
       if (tr.docChanged) {
         onChange(serializeMarkdown(newState.doc));
       }
+    },
+    nodeViews: {
+      code_block(node, view, getPos) {
+        if (node.attrs.language === "mermaid") {
+          return new MermaidNodeView(node, view, getPos);
+        }
+        return undefined as any;
+      },
     },
     attributes: { class: "pane-editor" },
   });
