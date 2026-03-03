@@ -1,10 +1,8 @@
 mod fs_ops;
-mod pty;
 mod settings;
 mod socket;
 mod watcher;
 
-use pty::PtyState;
 use tauri::menu::{AboutMetadataBuilder, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{Emitter, Manager};
 
@@ -38,9 +36,6 @@ pub fn run() {
                         dir.to_string_lossy().to_string()
                     }
                 });
-
-            // PTY state (spawned lazily by frontend after terminal is sized)
-            app.manage(PtyState::new());
 
             // Start file watcher on configured search folders
             let watch_folders = settings::get_search_folders();
@@ -105,9 +100,6 @@ pub fn run() {
             fs_ops::search_files,
             settings::get_search_folders,
             settings::open_settings,
-            pty::init_pty,
-            pty::write_to_pty,
-            pty::resize_pty,
         ])
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::Destroyed = event {
