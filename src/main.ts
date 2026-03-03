@@ -2,6 +2,9 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { openFile, closeActiveTab, saveActiveTab, focusEditor } from "./tabs";
 import { initQuickOpen, toggleQuickOpen } from "./quickopen";
+import "prosemirror-view/style/prosemirror.css";
+import "prosemirror-gapcursor/style/gapcursor.css";
+import "prosemirror-tables/style/tables.css";
 
 async function init() {
   initQuickOpen((path) => openFile(path));
