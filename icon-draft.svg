@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1024" height="1024" rx="220" fill="#000" />
-
-  <!-- M letter (markdown style) -->
-  <path d="M180,240 v544 h100 v-313 l232,200 l232,-200 v313 h100 v-544 h-100 l-232,200 l-232,-200 z" fill="#fff" />
-
-  <!-- Black gap -->
-  <rect x="432" y="230" width="160" height="564" fill="#000" />
-
-  <!-- Minimal I-beam cursor: stem + two flat serifs -->
-  <rect x="477" y="240" width="70" height="544" fill="#fff" />
-  <rect x="372" y="240" width="280" height="36" fill="#fff" />
-  <rect x="372" y="748" width="280" height="36" fill="#fff" />
+  <!-- Markdown M -->
+  <path d="
+    M 180,760
+    L 180,264
+    L 340,264
+    L 512,500
+    L 684,264
+    L 844,264
+    L 844,760
+    L 716,760
+    L 716,440
+    L 512,680
+    L 308,440
+    L 308,760
+    Z
+  " fill="#000000" />
 </svg>

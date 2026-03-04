@@ -10,6 +10,7 @@ interface Tab {
   path: string;
   name: string;
   content: string;
+  savedContent: string;
   unsaved: boolean;
 }
 
@@ -32,7 +33,7 @@ export async function openFile(path: string) {
 
   const content = await invoke<string>("read_file", { path });
   const name = path.split("/").pop() || path;
-  tabs.push({ path, name, content, unsaved: false });
+  tabs.push({ path, name, content, savedContent: content, unsaved: false });
   switchTab(path);
 }
 
@@ -100,7 +101,7 @@ function onContentChanged(path: string, markdown: string) {
   const tab = tabs.find((t) => t.path === path);
   if (!tab) return;
   tab.content = markdown;
-  tab.unsaved = true;
+  tab.unsaved = markdown !== tab.savedContent;
   updateUnsavedIndicator();
 }
 
@@ -113,6 +114,7 @@ export async function reloadTabFromDisk(path: string) {
   if (content === tab.content) return; // no actual change
 
   tab.content = content;
+  tab.savedContent = content;
 
   // If this tab is currently active, re-render it
   if (activeTabPath === path) {
@@ -141,6 +143,7 @@ export async function saveActiveTab() {
 
   try {
     await invoke("write_file", { path: tab.path, content: tab.content });
+    tab.savedContent = tab.content;
     tab.unsaved = false;
     updateUnsavedIndicator();
   } catch (e) {
@@ -308,7 +311,7 @@ export function initSourceEditor() {
     const tab = tabs.find((t) => t.path === activeTabPath);
     if (tab) {
       tab.content = source.value;
-      tab.unsaved = true;
+      tab.unsaved = source.value !== tab.savedContent;
       updateUnsavedIndicator();
     }
   });

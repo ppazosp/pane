@@ -1,16 +1,17 @@
 use std::io::Write;
 use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("Usage: pane <file>");
+        eprintln!("Usage: mm <file>");
         std::process::exit(1);
     }
 
-    // Support both `pane <file>` and `pane open <file>`
+    // Support both `mm <file>` and `mm open <file>`
     let file_arg = if args[1] == "open" && args.len() >= 3 {
         &args[2]
     } else {
@@ -25,14 +26,31 @@ fn main() {
     };
 
     let abs_path_str = abs_path.to_string_lossy().to_string();
+    let sock_path = dirs_home().join(".minmark.sock");
 
-    let sock_path = dirs_home().join(".pane.sock");
-
+    // Try to connect; if app isn't running, launch it and retry
     let mut stream = match UnixStream::connect(&sock_path) {
         Ok(s) => s,
-        Err(e) => {
-            eprintln!("Failed to connect to Pane (is it running?): {}", e);
-            std::process::exit(1);
+        Err(_) => {
+            // Launch the app
+            let _ = std::process::Command::new("open")
+                .arg("-a")
+                .arg("Minmark")
+                .spawn();
+
+            // Wait for socket to become available
+            let start = Instant::now();
+            let timeout = Duration::from_secs(10);
+            loop {
+                std::thread::sleep(Duration::from_millis(200));
+                if let Ok(s) = UnixStream::connect(&sock_path) {
+                    break s;
+                }
+                if start.elapsed() > timeout {
+                    eprintln!("Timed out waiting for Minmark to start");
+                    std::process::exit(1);
+                }
+            }
         }
     };
 

@@ -1,20 +1,20 @@
 [package]
-name = "pane"
+name = "minmark"
 version = "0.1.0"
 edition = "2021"
-default-run = "pane"
+default-run = "minmark"
 
 [lib]
-name = "pane_lib"
+name = "minmark_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
-name = "pane"
+name = "minmark"
 path = "src/main.rs"
 
 [[bin]]
-name = "pane-cli"
-path = "src/bin/pane_cli.rs"
+name = "mm"
+path = "src/bin/minmark_cli.rs"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

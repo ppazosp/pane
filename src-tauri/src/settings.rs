@@ -9,7 +9,7 @@ struct Settings {
 
 fn config_path() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/".to_string());
-    PathBuf::from(home).join(".config/pane/settings.json")
+    PathBuf::from(home).join(".config/minmark/settings.json")
 }
 
 fn expand_tilde(path: &str) -> String {
