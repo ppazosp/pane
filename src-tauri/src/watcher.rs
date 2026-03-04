@@ -62,17 +62,30 @@ pub fn start_watcher(app: AppHandle, paths: &[String], index: FileIndex) -> Resu
                                     }
                                 }
                             }
-                            EventKind::Modify(_) => {
-                                changed = true;
+                            // Catch-all: handles Modify, Access, Any, etc.
+                            // On macOS, file creation often arrives as Modify events.
+                            _ => {
                                 for p in paths {
                                     if p.extension().map(|e| e == "md").unwrap_or(false) {
-                                        if let Some(s) = p.to_str() {
-                                            modified_files.push(s.to_string());
+                                        changed = true;
+                                        let path_str = p.to_string_lossy().to_string();
+                                        modified_files.push(path_str.clone());
+                                        if p.exists() {
+                                            let name = p
+                                                .file_name()
+                                                .unwrap_or_default()
+                                                .to_string_lossy()
+                                                .to_string();
+                                            added.push(FileEntry {
+                                                name,
+                                                path: path_str,
+                                            });
+                                        } else {
+                                            removed.push(path_str);
                                         }
                                     }
                                 }
                             }
-                            _ => {}
                         }
                     }
 
