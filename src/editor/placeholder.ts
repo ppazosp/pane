@@ -4,6 +4,9 @@ import { schema } from "./schema";
 
 export const placeholderPluginKey = new PluginKey("placeholder");
 
+// Uses a node-class decoration (not a widget child) so the placeholder
+// appears via CSS ::before. Removing a widget <span> while the user is
+// mid-composition (Option+E + a → á) aborts the IME on WebKit.
 export function placeholderPlugin(text = "Start writing..."): Plugin {
   return new Plugin({
     key: placeholderPluginKey,
@@ -16,11 +19,9 @@ export function placeholderPlugin(text = "Start writing..."): Plugin {
           doc.firstChild.content.size === 0
         ) {
           return DecorationSet.create(doc, [
-            Decoration.widget(1, () => {
-              const span = document.createElement("span");
-              span.className = "placeholder";
-              span.textContent = text;
-              return span;
+            Decoration.node(0, doc.firstChild.nodeSize, {
+              class: "is-empty",
+              "data-placeholder": text,
             }),
           ]);
         }

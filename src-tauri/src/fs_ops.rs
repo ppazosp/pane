@@ -56,9 +56,7 @@ fn should_include(path: &Path, is_dir: bool) -> bool {
                 | "Public"
         );
     }
-    path.extension()
-        .map(|ext| ext == "md")
-        .unwrap_or(false)
+    path.extension().map(|ext| ext == "md").unwrap_or(false)
 }
 
 fn build_tree(path: &Path, depth: u32) -> Option<Vec<DirEntry>> {

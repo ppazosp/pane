@@ -13,7 +13,9 @@ struct SocketCommand {
 }
 
 fn socket_path() -> PathBuf {
-    dirs_next().unwrap_or_else(|| PathBuf::from("/tmp")).join(".minmark.sock")
+    dirs_next()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join(".minmark.sock")
 }
 
 fn dirs_next() -> Option<PathBuf> {
@@ -55,16 +57,21 @@ pub fn start_socket_listener(app: AppHandle, ready: Arc<AtomicBool>) {
                                         std::thread::sleep(std::time::Duration::from_millis(100));
                                     }
 
-                                    let _ = app.emit("open-file", &path);
-
-                                    // Small delay so frontend processes the file before showing
-                                    std::thread::sleep(std::time::Duration::from_millis(50));
-
-                                    // Show and focus the window
+                                    // Show window FIRST so the WKWebView is active when
+                                    // ProseMirror renders into it. Rendering against a hidden
+                                    // webview leaves the contenteditable in a stale paint
+                                    // state on macOS and the file appears blank until the
+                                    // user hides+shows the window.
                                     if let Some(w) = app.get_webview_window("main") {
                                         let _ = w.show();
                                         let _ = w.set_focus();
                                     }
+
+                                    // Tiny pause for the webview to re-attach before we
+                                    // trigger DOM mutations.
+                                    std::thread::sleep(std::time::Duration::from_millis(20));
+
+                                    let _ = app.emit("open-file", &path);
                                 }
                             }
                         }

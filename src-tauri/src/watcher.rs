@@ -5,6 +5,27 @@ use std::path::Path;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
+fn is_excluded(p: &Path) -> bool {
+    p.components().any(|c| {
+        matches!(
+            c.as_os_str().to_str(),
+            Some(
+                "node_modules"
+                    | "target"
+                    | "dist"
+                    | "build"
+                    | ".git"
+                    | ".cache"
+                    | ".next"
+                    | ".turbo"
+                    | ".venv"
+                    | "venv"
+                    | "__pycache__"
+            )
+        )
+    })
+}
+
 pub fn start_watcher(app: AppHandle, paths: &[String], index: FileIndex) -> Result<(), String> {
     let watch_paths: Vec<String> = paths.to_vec();
     let app_handle = app.clone();
@@ -25,8 +46,17 @@ pub fn start_watcher(app: AppHandle, paths: &[String], index: FileIndex) -> Resu
                     for event in events.iter() {
                         let kind = &event.event.kind;
                         let paths = &event.event.paths;
+
+                        // Skip events for excluded paths early to avoid swamping
+                        // notify-debouncer-full's FileIdMap during builds (target/,
+                        // node_modules/, etc.)
+                        if paths.iter().all(|p| is_excluded(p)) {
+                            continue;
+                        }
+
                         let is_relevant = paths.iter().any(|p| {
-                            p.extension().map(|e| e == "md").unwrap_or(false) || p.is_dir()
+                            !is_excluded(p)
+                                && (p.extension().map(|e| e == "md").unwrap_or(false) || p.is_dir())
                         });
 
                         if !is_relevant {
@@ -37,6 +67,9 @@ pub fn start_watcher(app: AppHandle, paths: &[String], index: FileIndex) -> Resu
                             EventKind::Create(_) => {
                                 changed = true;
                                 for p in paths {
+                                    if is_excluded(p) {
+                                        continue;
+                                    }
                                     if p.extension().map(|e| e == "md").unwrap_or(false) {
                                         let path_str = p.to_string_lossy().to_string();
                                         let name = p
@@ -55,6 +88,9 @@ pub fn start_watcher(app: AppHandle, paths: &[String], index: FileIndex) -> Resu
                             EventKind::Remove(_) => {
                                 changed = true;
                                 for p in paths {
+                                    if is_excluded(p) {
+                                        continue;
+                                    }
                                     if p.extension().map(|e| e == "md").unwrap_or(false) {
                                         let path_str = p.to_string_lossy().to_string();
                                         removed.push(path_str.clone());
@@ -66,6 +102,9 @@ pub fn start_watcher(app: AppHandle, paths: &[String], index: FileIndex) -> Resu
                             // On macOS, file creation often arrives as Modify events.
                             _ => {
                                 for p in paths {
+                                    if is_excluded(p) {
+                                        continue;
+                                    }
                                     if p.extension().map(|e| e == "md").unwrap_or(false) {
                                         changed = true;
                                         let path_str = p.to_string_lossy().to_string();
@@ -93,11 +132,17 @@ pub fn start_watcher(app: AppHandle, paths: &[String], index: FileIndex) -> Resu
                     if !removed.is_empty() || !added.is_empty() {
                         if let Ok(mut data) = idx.0.lock() {
                             if !removed.is_empty() {
-                                data.retain(|e| !removed.contains(&e.path));
+                                let removed_set: std::collections::HashSet<&String> =
+                                    removed.iter().collect();
+                                data.retain(|e| !removed_set.contains(&e.path));
                             }
-                            for entry in added {
-                                if !data.iter().any(|e| e.path == entry.path) {
-                                    data.push(entry);
+                            if !added.is_empty() {
+                                let existing: std::collections::HashSet<String> =
+                                    data.iter().map(|e| e.path.clone()).collect();
+                                for entry in added {
+                                    if !existing.contains(&entry.path) {
+                                        data.push(entry);
+                                    }
                                 }
                             }
                         }

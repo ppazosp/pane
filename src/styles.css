@@ -358,11 +358,18 @@ html, body {
 .ProseMirror .ProseMirror-gapcursor { position: relative; }
 .ProseMirror .ProseMirror-gapcursor::after { border-top: 1px solid var(--text-primary); }
 
-/* Placeholder */
-.placeholder {
+/* Placeholder — pseudo-element so we don't mutate DOM children mid-IME-composition */
+.pane-editor p.is-empty {
+  position: relative;
+}
+.pane-editor p.is-empty::before {
+  content: attr(data-placeholder);
   color: var(--text-muted);
   pointer-events: none;
   position: absolute;
+  left: 0;
+  top: 0;
+  user-select: none;
 }
 
 /* Quick open overlay */

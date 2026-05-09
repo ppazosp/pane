@@ -200,8 +200,11 @@ function renderMenu(view: EditorView) {
       execute(view, filtered[i]);
     });
     itemEl.addEventListener("mouseenter", () => {
+      if (i === selectedIdx) return;
+      const prev = el.querySelector(".slash-item.selected");
+      prev?.classList.remove("selected");
+      itemEl.classList.add("selected");
       selectedIdx = i;
-      renderMenu(view);
     });
 
     el.appendChild(itemEl);

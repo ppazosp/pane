@@ -134,8 +134,9 @@ export class MermaidNodeView implements NodeView {
   update(node: Node): boolean {
     if (node.type !== this.node.type) return false;
     if (node.attrs.language !== "mermaid") return false;
+    const sourceChanged = node.textContent !== this.node.textContent;
     this.node = node;
-    if (!this.editing) {
+    if (!this.editing && sourceChanged) {
       this.renderDiagram();
     }
     return true;

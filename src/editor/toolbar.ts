@@ -1,10 +1,7 @@
-import { Plugin, PluginKey } from "prosemirror-state";
+import { EditorState, Plugin, PluginKey, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { toggleMark } from "prosemirror-commands";
 import { schema } from "./schema";
-import { TextSelection } from "prosemirror-state";
-
-// --- Types ---
 
 interface ToolbarButton {
   label: string;
@@ -13,20 +10,10 @@ interface ToolbarButton {
   action: (view: EditorView) => void;
 }
 
-// --- Plugin state ---
-
 const toolbarKey = new PluginKey("toolbar");
 
 let toolbarEl: HTMLDivElement | null = null;
-
-function ensureToolbar(): HTMLDivElement {
-  if (!toolbarEl) {
-    toolbarEl = document.createElement("div");
-    toolbarEl.className = "floating-toolbar";
-    document.body.appendChild(toolbarEl);
-  }
-  return toolbarEl;
-}
+let boundView: EditorView | null = null;
 
 function getButtons(): ToolbarButton[] {
   return [
@@ -86,84 +73,88 @@ function getButtons(): ToolbarButton[] {
   ];
 }
 
-function renderToolbar(view: EditorView) {
-  const el = ensureToolbar();
-  const { from, to } = view.state.selection;
-
-  // Clear previous content
-  while (el.firstChild) el.removeChild(el.firstChild);
-
-  const buttons = getButtons();
-  for (const btn of buttons) {
-    const buttonEl = document.createElement("button");
-    buttonEl.className = "toolbar-btn";
-    buttonEl.textContent = btn.label;
-    if (btn.style) buttonEl.setAttribute("style", btn.style);
-
-    // Check if mark is active
-    const markType = schema.marks[btn.mark as keyof typeof schema.marks];
-    if (markType && view.state.doc.rangeHasMark(from, to, markType)) {
-      buttonEl.classList.add("active");
+function ensureToolbar(view: EditorView): HTMLDivElement {
+  if (!toolbarEl) {
+    toolbarEl = document.createElement("div");
+    toolbarEl.className = "floating-toolbar";
+    document.body.appendChild(toolbarEl);
+  }
+  // Build buttons once per view; reuse on subsequent selection updates.
+  if (boundView !== view) {
+    while (toolbarEl.firstChild) toolbarEl.removeChild(toolbarEl.firstChild);
+    for (const btn of getButtons()) {
+      const el = document.createElement("button");
+      el.className = "toolbar-btn";
+      el.textContent = btn.label;
+      if (btn.style) el.setAttribute("style", btn.style);
+      el.dataset.mark = String(btn.mark);
+      el.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        btn.action(view);
+      });
+      toolbarEl.appendChild(el);
     }
+    boundView = view;
+  }
+  return toolbarEl;
+}
 
-    buttonEl.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      btn.action(view);
-    });
-
-    el.appendChild(buttonEl);
+function updateActiveStates(el: HTMLDivElement, view: EditorView) {
+  const { from, to } = view.state.selection;
+  for (const child of Array.from(el.children) as HTMLElement[]) {
+    const markName = child.dataset.mark;
+    if (!markName) continue;
+    const markType =
+      markName === "link"
+        ? schema.marks.link
+        : schema.marks[markName as keyof typeof schema.marks];
+    if (!markType) continue;
+    child.classList.toggle("active", view.state.doc.rangeHasMark(from, to, markType));
   }
 }
 
-function positionToolbar(view: EditorView) {
-  const el = ensureToolbar();
+function positionToolbar(el: HTMLDivElement, view: EditorView) {
   const { from, to } = view.state.selection;
   const start = view.coordsAtPos(from);
   const end = view.coordsAtPos(to);
-  const top = Math.min(start.top, end.top) - 40;
-  const left = (start.left + end.left) / 2;
-
-  el.style.top = top + "px";
-  el.style.left = left + "px";
+  el.style.top = Math.min(start.top, end.top) - 40 + "px";
+  el.style.left = (start.left + end.left) / 2 + "px";
   el.style.transform = "translateX(-50%)";
   el.style.display = "flex";
 }
 
 function hideToolbar() {
-  if (toolbarEl) {
-    toolbarEl.style.display = "none";
-  }
+  if (toolbarEl) toolbarEl.style.display = "none";
 }
 
-// --- Plugin ---
+function shouldShow(view: EditorView): boolean {
+  const { selection } = view.state;
+  if (!(selection instanceof TextSelection) || selection.empty) return false;
+  return selection.$from.parent.type !== schema.nodes.code_block;
+}
 
 export function toolbarPlugin(): Plugin {
   return new Plugin({
     key: toolbarKey,
-
     view() {
       return {
-        update(view: EditorView) {
-          const { state } = view;
-          const { selection } = state;
-
-          // Only show for non-empty text selections in textblocks (not code_block)
-          if (
-            !(selection instanceof TextSelection) ||
-            selection.empty
-          ) {
+        update(view: EditorView, prevState: EditorState) {
+          if (!shouldShow(view)) {
             hideToolbar();
             return;
           }
 
-          const $from = selection.$from;
-          if ($from.parent.type === schema.nodes.code_block) {
-            hideToolbar();
-            return;
-          }
+          const el = ensureToolbar(view);
+          updateActiveStates(el, view);
 
-          renderToolbar(view);
-          positionToolbar(view);
+          // Reposition only when selection range actually moved.
+          const selectionMoved =
+            !prevState ||
+            !prevState.selection.eq(view.state.selection) ||
+            el.style.display !== "flex";
+          if (selectionMoved) {
+            positionToolbar(el, view);
+          }
         },
         destroy() {
           hideToolbar();
@@ -171,6 +162,7 @@ export function toolbarPlugin(): Plugin {
             toolbarEl.remove();
             toolbarEl = null;
           }
+          boundView = null;
         },
       };
     },

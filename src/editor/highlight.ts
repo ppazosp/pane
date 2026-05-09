@@ -22,11 +22,13 @@ type PrismToken = string | Prism.Token;
 
 function getTokenLength(token: PrismToken): number {
   if (typeof token === "string") return token.length;
-  if (typeof token.content === "string") return token.content.length;
-  if (Array.isArray(token.content)) {
-    return token.content.reduce((sum: number, t: PrismToken) => sum + getTokenLength(t), 0);
+  const content = token.content;
+  if (typeof content === "string") return content.length;
+  if (Array.isArray(content)) {
+    return content.reduce((sum: number, t: PrismToken) => sum + getTokenLength(t), 0);
   }
-  return 0;
+  // Single nested Token
+  return getTokenLength(content as PrismToken);
 }
 
 function flattenTokens(
@@ -44,13 +46,41 @@ function flattenTokens(
           class: "token " + token.type,
         })
       );
-      if (Array.isArray(token.content)) {
-        flattenTokens(token.content as PrismToken[], offset, decorations);
+      const content = token.content;
+      if (Array.isArray(content)) {
+        flattenTokens(content as PrismToken[], offset, decorations);
+      } else if (typeof content !== "string") {
+        flattenTokens([content as PrismToken], offset, decorations);
       }
       offset += length;
     }
   }
   return offset;
+}
+
+// LRU cache keyed by (language, source). Most keystrokes don't change a code
+// block's contents, so re-tokenization can be skipped for unchanged blocks.
+const TOKEN_CACHE_MAX = 64;
+const tokenCache = new Map<string, PrismToken[]>();
+
+function tokenize(text: string, language: string): PrismToken[] | null {
+  const grammar = Prism.languages[language];
+  if (!grammar) return null;
+  const key = language + "\0" + text;
+  const hit = tokenCache.get(key);
+  if (hit) {
+    // Touch (LRU)
+    tokenCache.delete(key);
+    tokenCache.set(key, hit);
+    return hit;
+  }
+  const tokens = Prism.tokenize(text, grammar);
+  tokenCache.set(key, tokens);
+  if (tokenCache.size > TOKEN_CACHE_MAX) {
+    const oldest = tokenCache.keys().next().value;
+    if (oldest !== undefined) tokenCache.delete(oldest);
+  }
+  return tokens;
 }
 
 function getDecorations(doc: Node): DecorationSet {
@@ -62,11 +92,8 @@ function getDecorations(doc: Node): DecorationSet {
     const language = node.attrs.language as string;
     if (!language || language === "mermaid") return;
 
-    const grammar = Prism.languages[language];
-    if (!grammar) return;
-
-    const text = node.textContent;
-    const tokens = Prism.tokenize(text, grammar);
+    const tokens = tokenize(node.textContent, language);
+    if (!tokens) return;
 
     // +1 to skip the opening of the code_block node
     flattenTokens(tokens, pos + 1, decorations);

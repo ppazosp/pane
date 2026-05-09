@@ -40,23 +40,20 @@ pub fn run() {
 
             // Determine working directory: first CLI arg or cwd
             // When running via `tauri dev`, cargo starts in src-tauri/ — go up one level
-            let cwd = std::env::args()
-                .nth(1)
-                .unwrap_or_else(|| {
-                    let dir = std::env::current_dir()
-                        .unwrap_or_else(|_| std::path::PathBuf::from("."));
-                    let dir = if dir.ends_with("src-tauri") {
-                        dir.parent().unwrap_or(&dir).to_path_buf()
-                    } else {
-                        dir
-                    };
-                    // When launched from Finder, cwd is "/" — fall back to $HOME
-                    if dir == std::path::PathBuf::from("/") {
-                        std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
-                    } else {
-                        dir.to_string_lossy().to_string()
-                    }
-                });
+            let cwd = std::env::args().nth(1).unwrap_or_else(|| {
+                let dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+                let dir = if dir.ends_with("src-tauri") {
+                    dir.parent().unwrap_or(&dir).to_path_buf()
+                } else {
+                    dir
+                };
+                // When launched from Finder, cwd is "/" — fall back to $HOME
+                if dir == std::path::PathBuf::from("/") {
+                    std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
+                } else {
+                    dir.to_string_lossy().to_string()
+                }
+            });
 
             // Create file index and build in background
             let file_index = FileIndex::new();
@@ -167,18 +164,22 @@ pub fn run() {
         tauri::RunEvent::Opened { urls } => {
             for url in urls {
                 let path = if url.scheme() == "file" {
-                    url.to_file_path().ok().map(|p| p.to_string_lossy().to_string())
+                    url.to_file_path()
+                        .ok()
+                        .map(|p| p.to_string_lossy().to_string())
                 } else {
                     None
                 };
                 if let Some(path) = path {
                     if let Some(ready_state) = app_handle.try_state::<socket::FrontendReady>() {
                         if ready_state.0.load(Ordering::Relaxed) {
-                            let _ = app_handle.emit("open-file", &path);
+                            // Show window before emitting so the webview is active when
+                            // ProseMirror renders the file.
                             if let Some(w) = app_handle.get_webview_window("main") {
                                 let _ = w.show();
                                 let _ = w.set_focus();
                             }
+                            let _ = app_handle.emit("open-file", &path);
                         } else if let Some(pending) = app_handle.try_state::<PendingFiles>() {
                             if let Ok(mut files) = pending.0.lock() {
                                 files.push(path);
